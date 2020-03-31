@@ -1,4 +1,4 @@
-package com.tracklist;
+package me.neilagarwal.tracklist;
 
 import com.facebook.react.ReactActivity;
 
