@@ -23,71 +23,79 @@ async function getTracklistUrl(mediaTitle) {
     method: 'POST'
   })
 
-  let rawSearchHTML = await search.text();
+  try {
+    let rawSearchHTML = await search.text();
 
-  if (rawSearchHTML) {
-    let $ = cheerio.load(rawSearchHTML);
-    let tlLink = $('div.tlLink a').attr('href');
-    getTracklist(`https://www.1001tracklists.com${tlLink}`)
-  } else {
-    console.log('No Search html')
+    if (rawSearchHTML) {
+      let $ = cheerio.load(rawSearchHTML);
+      let tlLink = $('div.tlLink a').attr('href');
+      return `https://www.1001tracklists.com${tlLink}`;
+    } else {
+      console.log('No Search html')
+    }
+
+  } catch (e) {
+    console.error(e)
   }
 }
 
-async function getTracklist(url) {
-  const data = await fetch(url)
-  let $ = cheerio.load(await data.text());
+async function getTracklist(mediaTitle) {
+  const url = await getTracklistUrl(mediaTitle)
 
-  //  trackList schema:
-  //  [ // main array
-  //    [ // Rows
-  //      { // main track
-  //        sub: false,
-  //        title: '',
-  //        start: ''
-  //      },
-  //      { // played with (if available)
-  //        sub: true,
-  //        title: '',
-  //        start: ''
-  //      }
-  //    ]
-  //  ]
+  if (url.length > 0) {
+    const data = await fetch(url)
+    let $ = cheerio.load(await data.text());
 
-  // TODO: Use itemprops
-  let trackList = []
+    //  trackList schema:
+    //  [ // main array
+    //    [ // Rows
+    //      { // main track
+    //        sub: false,
+    //        title: '',
+    //        start: ''
+    //      },
+    //      { // played with (if available)
+    //        sub: true,
+    //        title: '',
+    //        start: ''
+    //      }
+    //    ]
+    //  ]
 
-  // Iterate through all .tlpItem, separate .tlpTog and .tlpSubTog (/w tracks)
-  $('.tlpItem').each(function (tlpItemIndex, tlpItem) {
-    let title = $('span.trackFormat', tlpItem).text().trim()
-    let start = $('.cueValueField', tlpItem).text().trim()
+    // TODO: Use itemprops
+    let trackList = []
 
-    if ($(tlpItem).hasClass('tlpSubTog')) {
-      // sub
+    // Iterate through all .tlpItem, separate .tlpTog and .tlpSubTog (/w tracks)
+    $('.tlpItem').each(function (tlpItemIndex, tlpItem) {
+      let title = $('span.trackFormat', tlpItem).text().trim()
+      let start = $('.cueValueField', tlpItem).text().trim()
 
-      // if (start == '') {
-      //   start = trackList[trackList.length - 1][0].start
-      // }
+      if ($(tlpItem).hasClass('tlpSubTog')) {
+        // sub
 
-      trackList[trackList.length - 1].push({
-        sub: true,
-        title,
-        start
-      })
-    } else {
-      // main
-      trackList.push([
-        {
-          sub: false,
+        // if (start == '') {
+        //   start = trackList[trackList.length - 1][0].start
+        // }
+
+        trackList[trackList.length - 1].push({
+          sub: true,
           title,
           start
-        }
-      ])
-    }
-  })
+        })
+      } else {
+        // main
+        trackList.push([
+          {
+            sub: false,
+            title,
+            start
+          }
+        ])
+      }
+    })
 
-  console.log(trackList)
-
+    console.log(trackList)
+  }
 }
 
 const App = () => {
@@ -97,10 +105,19 @@ const App = () => {
 
   useEffect(() => {
     DeviceEventEmitter.addListener('MediaControllerService', (data) => {
-      setMediaTitle(data.mediaTitle)
+      if (mediaTitle !== data.mediaTitle) {
+        setMediaTitle(data.mediaTitle)
+      }
       setMediaPosition(data.mediaPosition)
     })
   })
+
+  useEffect(() => {
+    if (mediaTitle.length > 0) {
+      console.log(mediaTitle)
+      getTracklist(mediaTitle)
+    }
+  }, [mediaTitle])
 
   return (
     <>
