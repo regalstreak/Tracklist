@@ -1,23 +1,21 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   SafeAreaView,
   StyleSheet,
   ScrollView,
   Button,
+  Text,
   DeviceEventEmitter
 } from 'react-native';
 
-import { getTitle, startService } from './src/modules/MediaController'
+import { startService, stopService } from "./src/modules/Tracklist";
 
 const cheerio = require('cheerio-without-node-native');
 
-async function getModuleTitle() {
-  console.log(await getTitle());
-}
 
-async function getTracklistUrl() {
+async function getTracklistUrl(mediaTitle) {
   let formData = new FormData();
-  formData.append('main_search', 'ZHU @ Hakuba Iwatake in Nagano, Japan for Cercle');
+  formData.append('main_search', mediaTitle);
   formData.append('search_selection', '9');
 
   let search = await fetch('https://www.1001tracklists.com/search/result.php', {
@@ -94,36 +92,34 @@ async function getTracklist(url) {
 
 const App = () => {
 
+  const [mediaTitle, setMediaTitle] = useState('');
+  const [mediaPosition, setMediaPosition] = useState('')
+
   useEffect(() => {
-    DeviceEventEmitter.addListener('MediaController', (data) => {
-      console.log('Recieving media controller event ++ data==', data)
-      getModuleTitle();
+    DeviceEventEmitter.addListener('MediaControllerService', (data) => {
+      setMediaTitle(data.mediaTitle)
+      setMediaPosition(data.mediaPosition)
     })
   })
 
   return (
     <>
-      <SafeAreaView style={{ backgroundColor: 'black' }}>
+      <SafeAreaView>
         <ScrollView
-          style={{ backgroundColor: 'black' }}
           contentInsetAdjustmentBehavior="automatic">
-          <Button
-            onPress={() => {
-              getModuleTitle();
-            }}
-            title='Get Title'
-          />
-          <Button
-            onPress={() => {
-              getTracklistUrl();
-            }}
-            title='Get Tracklist Url'
-          />
+          <Text>{mediaTitle}</Text>
+          <Text>{mediaPosition}</Text>
           <Button
             onPress={() => {
               startService();
             }}
             title='Start service'
+          />
+          <Button
+            onPress={() => {
+              stopService();
+            }}
+            title='Stop service'
           />
         </ScrollView>
       </SafeAreaView>

@@ -5,7 +5,12 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.media.MediaMetadata;
+import android.media.session.MediaController;
+import android.media.session.MediaSessionManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
@@ -15,13 +20,14 @@ import androidx.core.app.NotificationCompat;
 
 import com.facebook.react.ReactInstanceManager;
 import com.facebook.react.ReactNativeHost;
-import com.facebook.react.bridge.ReactApplicationContext;
+import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.ReactContext;
+import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 
+import java.util.List;
+
 public class MediaControllerService extends Service {
-
-
     private Handler handler = new Handler();
     private static final int SERVICE_NOTIFICATION_ID = 12345;
     private static final String CHANNEL_ID = "MediaController";
@@ -35,7 +41,11 @@ public class MediaControllerService extends Service {
             ReactInstanceManager reactInstanceManager = reactNativeHost.getReactInstanceManager();
             ReactContext reactContext = reactInstanceManager.getCurrentReactContext();
 
-            reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit("MediaController", "ramraoadik");
+            WritableMap data = Arguments.createMap();
+            data.putString("mediaTitle", getTitle(reactContext));
+            data.putString("mediaPosition", getPosition(reactContext));
+
+            reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit("MediaControllerService", data);
             handler.postDelayed(this, 2000);
         }
     };
@@ -65,6 +75,12 @@ public class MediaControllerService extends Service {
         return null;
     }
 
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        this.handler.removeCallbacks(runnableCode);
+    }
+
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             int importance = NotificationManager.IMPORTANCE_DEFAULT;
@@ -72,6 +88,35 @@ public class MediaControllerService extends Service {
             channel.setDescription("CHANNEL DESCRIPTION");
             NotificationManager notificationManager = getSystemService(NotificationManager.class);
             notificationManager.createNotificationChannel(channel);
+        }
+    }
+
+    public String getPosition(Context context) {
+        return convertToMinutes(getFirstMediaController(context).getPlaybackState().getPosition());
+    }
+
+    public String getTitle(Context context) {
+        return getFirstMediaController(context).getMetadata().getString(MediaMetadata.METADATA_KEY_TITLE);
+    }
+
+    private MediaController getFirstMediaController(Context context) {
+        MediaSessionManager mediaSessionManager = (MediaSessionManager) context.getSystemService(Context.MEDIA_SESSION_SERVICE);
+        List<MediaController> controller = mediaSessionManager.getActiveSessions((new ComponentName(context, NotificationListener.class)));
+        MediaController firstController = controller.get(0);
+        return firstController;
+    }
+
+    private String convertToMinutes(long ms) {
+        long minutes = (ms / 1000) / 60;
+        long seconds = ((ms / 1000) % 60);
+        return prefixZero(minutes) + ':' + prefixZero(seconds);
+    }
+
+    private String prefixZero(long val) {
+        if (val >= 0 && val < 10) {
+            return '0' + Long.toString(val);
+        } else {
+            return Long.toString(val);
         }
     }
 }
