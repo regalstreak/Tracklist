@@ -2,6 +2,7 @@
   package="me.neilagarwal.tracklist">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
     <application
       android:name=".MainApplication"
@@ -30,6 +31,8 @@
                 <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
         </service>
+
+        <service android:name=".MediaControllerService" />
     </application>
 
 </manifest>

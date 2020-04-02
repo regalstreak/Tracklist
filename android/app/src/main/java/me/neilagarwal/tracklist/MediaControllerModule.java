@@ -2,8 +2,10 @@ package me.neilagarwal.tracklist;
 
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
 import android.media.MediaMetadata;
 import android.media.session.MediaController;
+import android.media.session.MediaSession;
 import android.media.session.MediaSessionManager;
 import android.os.Build;
 import android.util.Log;
@@ -36,7 +38,6 @@ public class MediaControllerModule extends ReactContextBaseJavaModule {
         return "MediaController";
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     @ReactMethod
     public void getTitle(Promise promise) {
 
@@ -57,14 +58,31 @@ public class MediaControllerModule extends ReactContextBaseJavaModule {
         } catch (Exception e) {
             promise.reject("Exception", e);
         }
+    }
 
+    @ReactMethod
+    public void startService() {
+        reactContext.startService(new Intent(reactContext, MediaControllerService.class));
+    }
 
+    private MediaController getFirstMediaController(Context context) {
+        MediaSessionManager mediaSessionManager = (MediaSessionManager)context.getSystemService(Context.MEDIA_SESSION_SERVICE);
+        List<MediaController> controller = mediaSessionManager.getActiveSessions((new ComponentName(context, NotificationListener.class)));
+        MediaController firstController = controller.get(0);
+        return firstController;
+    }
+
+    public String getDuration(Context context) {
+        return convertToMinutes(getFirstMediaController(context).getPlaybackState().getPosition());
+    }
+
+    public String getTitle(Context context) {
+        return getFirstMediaController(context).getMetadata().getString(MediaMetadata.METADATA_KEY_TITLE);
     }
 
     private String convertToMinutes(long ms) {
         long minutes = (ms / 1000) / 60;
         long seconds = ((ms / 1000) % 60);
-
         return prefixZero(minutes) + ':' + prefixZero(seconds);
     }
 

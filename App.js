@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   SafeAreaView,
   StyleSheet,
   ScrollView,
-  Button
+  Button,
+  DeviceEventEmitter
 } from 'react-native';
 
-import { getTitle } from './src/modules/MediaController'
+import { getTitle, startService } from './src/modules/MediaController'
 
 const cheerio = require('cheerio-without-node-native');
 
@@ -92,6 +93,14 @@ async function getTracklist(url) {
 }
 
 const App = () => {
+
+  useEffect(() => {
+    DeviceEventEmitter.addListener('MediaController', (data) => {
+      console.log('Recieving media controller event ++ data==', data)
+      getModuleTitle();
+    })
+  })
+
   return (
     <>
       <SafeAreaView style={{ backgroundColor: 'black' }}>
@@ -109,6 +118,12 @@ const App = () => {
               getTracklistUrl();
             }}
             title='Get Tracklist Url'
+          />
+          <Button
+            onPress={() => {
+              startService();
+            }}
+            title='Start service'
           />
         </ScrollView>
       </SafeAreaView>

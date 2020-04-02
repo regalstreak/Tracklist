@@ -8,3 +8,5 @@ export async function getTitle() {
         console.error(e);
     }
 }
+
+export const startService = MediaController.startService;
