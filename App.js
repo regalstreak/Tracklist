@@ -6,12 +6,31 @@ import {
   Text,
   DeviceEventEmitter
 } from 'react-native';
+import WebView from 'react-native-webview';
 
 import TrackListCard from "./src/components/TrackListCard";
 import { startService, stopService, updateNotification } from "./src/modules/Tracklist";
 import globalStyles from "./src/styles/GlobalStyles";
 
 const cheerio = require('cheerio-without-node-native');
+
+async function checkBlocked() {
+  let content = await fetch('https://www.1001tracklists.com/');
+  try {
+    let rawHTML = await content.text();
+    if (rawHTML) {
+      let $ = cheerio.load(rawHTML);
+      const blockedText = 'Forbidden'
+      if ($('body h1').text() === blockedText) {
+        return true;
+      } else {
+        return false
+      }
+    }
+  } catch (e) {
+    console.log(e)
+  }
+}
 
 async function getTracklistUrl(mediaTitle) {
   let formData = new FormData();
@@ -188,6 +207,7 @@ const getCurrentIndex = (trackListMap, position) => {
 
 const App = () => {
 
+  const [blocked, setBlocked] = useState(true);
   const [mediaTitle, setMediaTitle] = useState('');
   const [mediaPosition, setMediaPosition] = useState('')
   const [trackList, setTrackList] = useState([]);
@@ -196,6 +216,11 @@ const App = () => {
     subIndex: 0,
     trackItem: { title: '', startSeconds: 0, start: '' }
   })
+
+  useEffect(() => {
+    let blocked = checkBlocked().then(val => val);
+    setBlocked(blocked);
+  }, [])
 
   useEffect(() => {
     DeviceEventEmitter.addListener('MediaControllerService', (data) => {
@@ -236,33 +261,47 @@ const App = () => {
     }
   }, [currentTrack])
 
-  return (
-    <>
-      <ScrollView
-        style={globalStyles.scrollView}
-        contentInsetAdjustmentBehavior="automatic">
-        <Text style={globalStyles.textEmphasis}>{mediaTitle}</Text>
-        <Text style={globalStyles.textNormal}>{mediaPosition}</Text>
-        <Text style={globalStyles.textNormal}>{currentTrack.trackItem.startSeconds} - {currentTrack.trackItem.title}</Text>
-        <Button
-          color="#385CFF"
-          onPress={() => {
-            startService();
-          }}
-          title='Start service'
-        />
-        <Button
-          onPress={() => {
-            stopService();
-          }}
-          title='Stop service'
-        />
+  if (blocked) {
+    return (
+      <WebView
+        source={{ uri: 'https://www.1001tracklists.com/' }}
+        onNavigationStateChange={newNavState => {
+          if (newNavState && newNavState.title && newNavState.title.includes('403')) {
+            setBlocked(true);
+          }
+          setBlocked(false);
+        }}
+      />
+    )
+  } else {
+    return (
+      <>
+        <ScrollView
+          style={globalStyles.scrollView}
+          contentInsetAdjustmentBehavior="automatic">
+          <Text style={globalStyles.textEmphasis}>{mediaTitle}</Text>
+          <Text style={globalStyles.textNormal}>{mediaPosition}</Text>
+          <Text style={globalStyles.textNormal}>{currentTrack.trackItem.startSeconds} - {currentTrack.trackItem.title}</Text>
+          <Button
+            color="#385CFF"
+            onPress={() => {
+              startService();
+            }}
+            title='Start service'
+          />
+          <Button
+            onPress={() => {
+              stopService();
+            }}
+            title='Stop service'
+          />
 
-        {renderTrackList(trackList)}
+          {renderTrackList(trackList)}
 
-      </ScrollView>
-    </>
-  );
+        </ScrollView>
+      </>
+    );
+  }
 };
 
 export default App;
