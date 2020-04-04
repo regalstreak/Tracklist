@@ -16,7 +16,9 @@ import android.os.Handler;
 import android.os.IBinder;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
+import androidx.core.app.Person;
 
 import com.facebook.react.ReactInstanceManager;
 import com.facebook.react.ReactNativeHost;
@@ -29,9 +31,8 @@ import java.util.List;
 
 public class MediaControllerService extends Service {
     private Handler handler = new Handler();
-    private static final int SERVICE_NOTIFICATION_ID = 12345;
-    private static final String CHANNEL_ID = "MediaController";
-
+    public static final int SERVICE_NOTIFICATION_ID = 12345;
+    public static final String CHANNEL_ID = "Tracklist";
 
     private Runnable runnableCode = new Runnable() {
         @Override
@@ -43,7 +44,7 @@ public class MediaControllerService extends Service {
 
             WritableMap data = Arguments.createMap();
             data.putString("mediaTitle", getTitle(reactContext));
-            data.putString("mediaPosition", getPosition(reactContext));
+            data.putInt("mediaPosition", getPosition(reactContext));
 
             reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit("MediaControllerService", data);
             handler.postDelayed(this, 2000);
@@ -58,13 +59,16 @@ public class MediaControllerService extends Service {
         createNotificationChannel();
         Intent notificationIntent = new Intent(this, MainActivity.class);
         PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_CANCEL_CURRENT);
+
         Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("Media Controller service")
-                .setContentText("Running…")
+                .setContentTitle("Tracklist")
+                .setContentText("Service started")
+                .addAction(0, "Action", null)
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setContentIntent(contentIntent)
                 .setOngoing(true)
                 .build();
+
         startForeground(SERVICE_NOTIFICATION_ID, notification);
         return START_STICKY;
     }
@@ -84,39 +88,40 @@ public class MediaControllerService extends Service {
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             int importance = NotificationManager.IMPORTANCE_DEFAULT;
-            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, "MediaController", importance);
-            channel.setDescription("CHANNEL DESCRIPTION");
+            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, "Tracklist", importance);
+            channel.setDescription("Currently playing tracks and links");
             NotificationManager notificationManager = getSystemService(NotificationManager.class);
             notificationManager.createNotificationChannel(channel);
         }
     }
 
-    public String getPosition(Context context) {
-        return convertToMinutes(getFirstMediaController(context).getPlaybackState().getPosition());
+    public int getPosition(Context context) {
+        MediaController mediaController = getFirstMediaController(context);
+        if (mediaController != null) {
+            return (int) (getFirstMediaController(context).getPlaybackState().getPosition()) / 1000;
+        } else {
+            return -1;
+        }
     }
 
     public String getTitle(Context context) {
-        return getFirstMediaController(context).getMetadata().getString(MediaMetadata.METADATA_KEY_TITLE);
+        MediaController mediaController = getFirstMediaController(context);
+        if (mediaController != null) {
+            return getFirstMediaController(context).getMetadata().getString(MediaMetadata.METADATA_KEY_TITLE);
+        } else {
+            return "";
+        }
+
     }
 
     private MediaController getFirstMediaController(Context context) {
         MediaSessionManager mediaSessionManager = (MediaSessionManager) context.getSystemService(Context.MEDIA_SESSION_SERVICE);
         List<MediaController> controller = mediaSessionManager.getActiveSessions((new ComponentName(context, NotificationListener.class)));
-        MediaController firstController = controller.get(0);
-        return firstController;
-    }
 
-    private String convertToMinutes(long ms) {
-        long minutes = (ms / 1000) / 60;
-        long seconds = ((ms / 1000) % 60);
-        return prefixZero(minutes) + ':' + prefixZero(seconds);
-    }
-
-    private String prefixZero(long val) {
-        if (val >= 0 && val < 10) {
-            return '0' + Long.toString(val);
+        if (controller.size() > 0) {
+            return controller.get(0);
         } else {
-            return Long.toString(val);
+            return null;
         }
     }
 }
