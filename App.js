@@ -218,11 +218,6 @@ const App = () => {
   })
 
   useEffect(() => {
-    let blocked = checkBlocked().then(val => val);
-    setBlocked(blocked);
-  }, [])
-
-  useEffect(() => {
     DeviceEventEmitter.addListener('MediaControllerService', (data) => {
       if (mediaTitle !== data.mediaTitle) {
         setMediaTitle(data.mediaTitle)
@@ -234,11 +229,15 @@ const App = () => {
   useEffect(() => {
     if (mediaTitle.length > 0) {
       console.log(mediaTitle)
-      getTracklist(mediaTitle).then((tl) => {
-        setTrackList(tl)
-      }).catch(err => {
-        console.log(err)
-      })
+      let blocked = checkBlocked().then(val => val);
+      setBlocked(blocked)
+      if (!blocked) {
+        getTracklist(mediaTitle).then((tl) => {
+          setTrackList(tl)
+        }).catch(err => {
+          console.log(err)
+        })
+      }
     }
   }, [mediaTitle])
 
@@ -251,7 +250,6 @@ const App = () => {
 
       setCurrentTrack({ mainIndex, subIndex, trackItem: trackList[mainIndex][subIndex] })
     }
-
   }, [mediaPosition, trackList])
 
   useEffect(() => {
