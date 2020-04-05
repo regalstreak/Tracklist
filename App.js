@@ -4,9 +4,10 @@ import {
   ScrollView,
   Button,
   Text,
-  DeviceEventEmitter
+  DeviceEventEmitter,
 } from 'react-native';
 import WebView from 'react-native-webview';
+import AsyncStorage from '@react-native-community/async-storage';
 
 import TrackListCard from "./src/components/TrackListCard";
 import { startService, stopService, updateNotification } from "./src/modules/Tracklist";
@@ -20,8 +21,8 @@ async function checkBlocked() {
     let rawHTML = await content.text();
     if (rawHTML) {
       let $ = cheerio.load(rawHTML);
-      const blockedText = 'Forbidden'
-      if ($('body h1').text() === blockedText) {
+      const blockedText = 'Fill out the reCAPTCHA to unblock your IP'
+      if ($('body').text().trim().includes(blockedText)) {
         return true;
       } else {
         return false
@@ -29,6 +30,21 @@ async function checkBlocked() {
     }
   } catch (e) {
     console.log(e)
+  }
+}
+
+async function getLocalTracklist(mediaTitle) {
+  try {
+    let localTracklist = await AsyncStorage.getItem(`@Tracklist:${mediaTitle}`)
+    if (localTracklist !== null) {
+      console.log('Local Tracklist available')
+      return JSON.parse(localTracklist);
+    } else {
+      return false;
+    }
+  }
+  catch (error) {
+    console.log(error)
   }
 }
 
@@ -59,6 +75,7 @@ async function getTracklistUrl(mediaTitle) {
 }
 
 async function getTracklist(mediaTitle) {
+  console.log('Getting tracklist from url')
   const url = await getTracklistUrl(mediaTitle)
 
   if (url.length > 0) {
@@ -117,8 +134,14 @@ async function getTracklist(mediaTitle) {
       }
     })
 
+    try {
+      AsyncStorage.setItem(`@Tracklist:${mediaTitle}`, JSON.stringify(trackList))
+    } catch (error) {
+      console.log('Error setting data', error)
+    }
     return trackList;
   }
+
 }
 
 const getTracklistStartMap = (trackList) => {
@@ -207,7 +230,7 @@ const getCurrentIndex = (trackListMap, position) => {
 
 const App = () => {
 
-  const [blocked, setBlocked] = useState(true);
+  const [blocked, setBlocked] = useState(false);
   const [mediaTitle, setMediaTitle] = useState('');
   const [mediaPosition, setMediaPosition] = useState('')
   const [trackList, setTrackList] = useState([]);
@@ -228,16 +251,34 @@ const App = () => {
 
   useEffect(() => {
     if (mediaTitle.length > 0) {
-      console.log(mediaTitle)
-      let blocked = checkBlocked().then(val => val);
-      setBlocked(blocked)
-      if (!blocked) {
-        getTracklist(mediaTitle).then((tl) => {
-          setTrackList(tl)
-        }).catch(err => {
-          console.log(err)
-        })
-      }
+      getLocalTracklist(mediaTitle).then(localTracklist => {
+        if (localTracklist) {
+          setTrackList(localTracklist)
+        } else {
+          checkBlocked().then(blck => {
+            setBlocked(blck)
+            if (!blck) {
+              getTracklist(mediaTitle).then((tl) => {
+                setTrackList(tl)
+              }).catch(err => {
+                console.log(err)
+              })
+            }
+          });
+        }
+      }).catch(e => {
+        console.log('error getting local tracklist info, getting from url', e);
+        checkBlocked().then(blck => {
+          setBlocked(blck)
+          if (!blck) {
+            getTracklist(mediaTitle).then((tl) => {
+              setTrackList(tl)
+            }).catch(err => {
+              console.log(err)
+            })
+          }
+        });
+      })
     }
   }, [mediaTitle])
 
@@ -245,10 +286,12 @@ const App = () => {
     if (mediaPosition >= 0 && trackList.length > 0) {
       let trackListStartMap = getTracklistStartMap(trackList);
       let currentIndex = getCurrentIndex(trackListStartMap, mediaPosition);
-      let mainIndex = trackListStartMap[currentIndex].index;
-      let subIndex = trackListStartMap[currentIndex].subIndex;
+      if (trackList[currentIndex]) {
+        let mainIndex = trackListStartMap[currentIndex].index;
+        let subIndex = trackListStartMap[currentIndex].subIndex;
 
-      setCurrentTrack({ mainIndex, subIndex, trackItem: trackList[mainIndex][subIndex] })
+        setCurrentTrack({ mainIndex, subIndex, trackItem: trackList[mainIndex][subIndex] })
+      }
     }
   }, [mediaPosition, trackList])
 
@@ -264,14 +307,15 @@ const App = () => {
       <WebView
         source={{ uri: 'https://www.1001tracklists.com/' }}
         onNavigationStateChange={newNavState => {
-          if (newNavState && newNavState.title && newNavState.title.includes('403')) {
-            setBlocked(true);
+          if (!newNavState.loading && !newNavState.title.includes('403')) {
+            setBlocked(false);
           }
-          setBlocked(false);
+          console.log(newNavState)
         }}
       />
     )
   } else {
+
     return (
       <>
         <ScrollView
