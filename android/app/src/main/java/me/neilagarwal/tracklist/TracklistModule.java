@@ -5,8 +5,10 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Resources;
 import android.text.Spanned;
 import android.util.Log;
+import android.util.TypedValue;
 
 import androidx.core.app.NotificationCompat;
 import androidx.core.text.HtmlCompat;
@@ -61,7 +63,7 @@ public class TracklistModule extends ReactContextBaseJavaModule {
                 .setContentText((CharSequence) current.get("start"))
                 .setStyle(new NotificationCompat.BigTextStyle()
                         .bigText(getNotificationContentMap(current, previous, next).get("text"))
-                        .setSummaryText(current.get("start") + " (" + payload.getInt("index") + ")")
+                        .setSummaryText(current.get("start") + " [" + payload.getInt("index") + "]")
                 )
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setContentIntent(contentIntent)
@@ -99,30 +101,38 @@ public class TracklistModule extends ReactContextBaseJavaModule {
         Spanned text;
         Spanned title;
 
+        final String nextTextString = "<b><font color=\"#385CFF\">Next</font>: </b>";
+        final String previousTextString = "<b><font color=\"#385CFF\">Previous</font>: </b>";
+        final String startString1 = "<font color=\"#262832\">";
+        final String startString2 = "</font> <b>|</b> ";
+
+        final String errorTitleString = "Error getting notification title";
+        final String errorTextString = "Please contact developer for help";
+
         if (current != null) {
-            title = HtmlCompat.fromHtml((String) current.get("title"), HtmlCompat.FROM_HTML_MODE_LEGACY);
+            title = HtmlCompat.fromHtml("<b>" + current.get("title") + "</b>", HtmlCompat.FROM_HTML_MODE_LEGACY);
 
             if (previous == null && next != null) {
                 // first
-                text = HtmlCompat.fromHtml("<font color=\"#385CFF\"><b>Next</b></font>: <font color=\"#ff0000\">" + next.get("start") + "</font> | " + next.get("title"), HtmlCompat.FROM_HTML_MODE_LEGACY);
+                text = HtmlCompat.fromHtml(nextTextString + startString1 + next.get("start") + startString2 + next.get("title"), HtmlCompat.FROM_HTML_MODE_LEGACY);
 
             } else if (previous != null && next == null) {
                 // last
-                text = HtmlCompat.fromHtml("<font color=\"#385CFF\"><b>Previous</b></font>: <font color=\"#ff0000\">" + previous.get("start") + "</font> | " + previous.get("title"), HtmlCompat.FROM_HTML_MODE_LEGACY);
+                text = HtmlCompat.fromHtml(previousTextString + startString1 + previous.get("start") + startString2 + previous.get("title"), HtmlCompat.FROM_HTML_MODE_LEGACY);
 
             } else if (previous != null & next != null) {
                 // both
-                text = HtmlCompat.fromHtml("<font color=\"#385CFF\"><b>Previous</b></font>: <font color=\"#ff0000\">" + previous.get("start") + "</font> | " + previous.get("title") + "<br>"
-                        + "<font color=\"#385CFF\"><b>Next</b></font>: <font color=\"#ff0000\">" + next.get("start") + "</font> | " + next.get("title"), HtmlCompat.FROM_HTML_MODE_LEGACY);
+                text = HtmlCompat.fromHtml(previousTextString + startString1 + previous.get("start") + startString2 + previous.get("title") + "<br>"
+                        + nextTextString + startString1 + next.get("start") + startString2 + next.get("title"), HtmlCompat.FROM_HTML_MODE_LEGACY);
             } else {
                 // error
-                title = HtmlCompat.fromHtml("Error getting notification title", HtmlCompat.FROM_HTML_MODE_LEGACY);
-                text = HtmlCompat.fromHtml("Please contact developer for help", HtmlCompat.FROM_HTML_MODE_LEGACY);
+                title = HtmlCompat.fromHtml(errorTitleString, HtmlCompat.FROM_HTML_MODE_LEGACY);
+                text = HtmlCompat.fromHtml(errorTextString, HtmlCompat.FROM_HTML_MODE_LEGACY);
             }
         } else {
             // error
-            title = HtmlCompat.fromHtml("Error getting notification title", HtmlCompat.FROM_HTML_MODE_LEGACY);
-            text = HtmlCompat.fromHtml("Please contact developer for help", HtmlCompat.FROM_HTML_MODE_LEGACY);
+            title = HtmlCompat.fromHtml(errorTitleString, HtmlCompat.FROM_HTML_MODE_LEGACY);
+            text = HtmlCompat.fromHtml(errorTextString, HtmlCompat.FROM_HTML_MODE_LEGACY);
         }
 
         notificationContentMap.put("title", title);
