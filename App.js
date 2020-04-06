@@ -165,9 +165,15 @@ const getTracklistStartMap = (trackList) => {
   trackList.forEach((element, index) => {
     if (element.length > 1) {
       element.forEach((subElement, subIndex) => {
-        if (subElement.startSeconds === -1) {
+        if (subElement.startSeconds === 1.1) {
           trackListStartMap.push({
             startSeconds: trackList[index][0].startSeconds + 60,
+            index,
+            subIndex
+          });
+        } else if (!subElement.startSeconds) {
+          trackListStartMap.push({
+            startSeconds: trackList[index - 1][trackList[index - 1].length - 1].startSeconds + 60,
             index,
             subIndex
           });
@@ -180,11 +186,19 @@ const getTracklistStartMap = (trackList) => {
         }
       });
     } else {
-      trackListStartMap.push({
-        startSeconds: element[0].startSeconds,
-        index,
-        subIndex: 0
-      });
+      if (element[0].startSeconds) {
+        trackListStartMap.push({
+          startSeconds: element[0].startSeconds,
+          index,
+          subIndex: 0
+        });
+      } else {
+        trackListStartMap.push({
+          startSeconds: Math.random() * 10000,
+          index,
+          subIndex: 0
+        });
+      }
     }
   });
 
@@ -209,7 +223,7 @@ const hmsToSecondsOnly = (str) => {
     }
     return s;
   } else {
-    return -1;
+    return 1.1;
   }
 }
 
@@ -217,7 +231,7 @@ const getCurrentIndex = (trackListMap, position) => {
   if (trackListMap && trackListMap.length > 0 && position) {
     let x = -1;
     for (let b = trackListMap.length; b >= 1;) {
-      while (trackListMap[x + b].startSeconds && position > trackListMap[x + b].startSeconds) {
+      while (trackListMap[x + b] && trackListMap[x + b].startSeconds && position > trackListMap[x + b].startSeconds) {
         x += b;
       }
       b = Math.floor(b / 2);
@@ -234,6 +248,7 @@ const App = () => {
   const [mediaTitle, setMediaTitle] = useState('');
   const [mediaPosition, setMediaPosition] = useState('')
   const [trackList, setTrackList] = useState([]);
+  const [trackListStartMap, setTrackListStartMap] = useState([]);
   const [currentTrack, setCurrentTrack] = useState({
     mainIndex: 0,
     subIndex: 0,
@@ -284,22 +299,73 @@ const App = () => {
 
   useEffect(() => {
     if (mediaPosition >= 0 && trackList.length > 0) {
-      let trackListStartMap = getTracklistStartMap(trackList);
-      let currentIndex = getCurrentIndex(trackListStartMap, mediaPosition);
+      let trackListStartMapLocal = getTracklistStartMap(trackList);
+      setTrackListStartMap(trackListStartMapLocal);
+      let currentIndex = getCurrentIndex(trackListStartMapLocal, mediaPosition);
       if (trackList[currentIndex]) {
-        let mainIndex = trackListStartMap[currentIndex].index;
-        let subIndex = trackListStartMap[currentIndex].subIndex;
+        let mainIndex = trackListStartMapLocal[currentIndex].index;
+        let subIndex = trackListStartMapLocal[currentIndex].subIndex;
 
-        setCurrentTrack({ mainIndex, subIndex, trackItem: trackList[mainIndex][subIndex] })
+        if (currentTrack) {
+          if (currentTrack.trackItem.mainIndex !== mainIndex && currentTrack.trackItem.subIndex !== subIndex) {
+            setCurrentTrack({ mainIndex, subIndex, trackItem: trackList[mainIndex][subIndex] })
+          } else if (currentTrack.trackItem.title.length === 0) {
+            setCurrentTrack({ mainIndex, subIndex, trackItem: trackList[mainIndex][subIndex] })
+          }
+        } else {
+          setCurrentTrack({ mainIndex, subIndex, trackItem: trackList[mainIndex][subIndex] })
+        }
       }
     }
   }, [mediaPosition, trackList])
 
   useEffect(() => {
-    let { title, start } = currentTrack.trackItem;
-    if (title.length > 0 && start) {
-      updateNotification(title, start);
+    if (currentTrack && currentTrack.trackItem.title.length > 0) {
+
+      let previousTrack, nextTrack;
+      let tlsmCurrentIndex = -1;
+
+      if (trackListStartMap.length > 0) {
+        tlsmCurrentIndex = trackListStartMap.findIndex(element => {
+          if (element.index === currentTrack.mainIndex && element.subIndex === currentTrack.subIndex) {
+            return true
+          }
+        })
+      }
+
+      if (tlsmCurrentIndex === 0) {
+        // first Track
+        const tlsmNextTrack = trackListStartMap[tlsmCurrentIndex + 1]
+
+        previousTrack = null;
+        nextTrack = trackList[tlsmNextTrack.index][tlsmNextTrack.subIndex];
+      } else if (tlsmCurrentIndex === (trackListStartMap.length - 1)) {
+        // last Track
+        const tlsmPreviousTrack = trackListStartMap[tlsmCurrentIndex - 1]
+
+        previousTrack = trackList[tlsmPreviousTrack.index][tlsmPreviousTrack.subIndex];
+        nextTrack = null;
+      } else if (tlsmCurrentIndex === -1) {
+        console.log('tlsmCurrentIndex not found')
+      } else {
+        const tlsmPreviousTrack = trackListStartMap[tlsmCurrentIndex - 1]
+        const tlsmNextTrack = trackListStartMap[tlsmCurrentIndex + 1]
+
+        previousTrack = trackList[tlsmPreviousTrack.index][tlsmPreviousTrack.subIndex];
+        nextTrack = trackList[tlsmNextTrack.index][tlsmNextTrack.subIndex];
+      }
+
+      const payload = {
+        index: currentTrack.mainIndex,
+        currentTrack: currentTrack.trackItem,
+        previousTrack,
+        nextTrack
+      }
+
+      updateNotification(payload);
+
     }
+
   }, [currentTrack])
 
   if (blocked) {
@@ -310,7 +376,6 @@ const App = () => {
           if (!newNavState.loading && !newNavState.title.includes('403')) {
             setBlocked(false);
           }
-          console.log(newNavState)
         }}
       />
     )
