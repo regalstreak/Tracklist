@@ -5,10 +5,10 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.content.res.Resources;
+import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.net.Uri;
 import android.text.Spanned;
-import android.util.Log;
-import android.util.TypedValue;
 
 import androidx.core.app.NotificationCompat;
 import androidx.core.text.HtmlCompat;
@@ -18,7 +18,6 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableMap;
 
-import java.security.Timestamp;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,6 +25,7 @@ import java.util.Map;
 public class TracklistModule extends ReactContextBaseJavaModule {
     private static ReactApplicationContext reactContext;
     private static Intent mediaControllerServiceIntent;
+    private boolean isSpotifyInstalled;
 
     TracklistModule(ReactApplicationContext context) {
         super(context);
@@ -40,6 +40,14 @@ public class TracklistModule extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void startService() {
+        PackageManager pm = reactContext.getPackageManager();
+        try {
+            pm.getPackageInfo("com.spotify.music", 0);
+            isSpotifyInstalled = true;
+        } catch (PackageManager.NameNotFoundException e) {
+            isSpotifyInstalled = false;
+        }
+
         reactContext.startService(mediaControllerServiceIntent);
     }
 
@@ -68,6 +76,10 @@ public class TracklistModule extends ReactContextBaseJavaModule {
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setContentIntent(contentIntent)
                 .setOngoing(true)
+                .addAction(getAction("Spotify (Current)", (String) current.get("title")))
+                .addAction(getAction("Spotify (Previous)", (String) previous.get("title")))
+                .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setColor(Color.parseColor("#385CFF"))
                 .build();
 
         NotificationManager notificationManager = (NotificationManager) reactContext.getSystemService(Context.NOTIFICATION_SERVICE);
@@ -139,6 +151,26 @@ public class TracklistModule extends ReactContextBaseJavaModule {
         notificationContentMap.put("text", text);
 
         return notificationContentMap;
+    }
+
+    private NotificationCompat.Action getAction(String actionTitle, String search) {
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        PendingIntent pendingIntent;
+
+        String searchFiltered = search.replaceAll("\\p{P}", "");
+
+        if (isSpotifyInstalled) {
+            intent.setData(Uri.parse("spotify:search:" + searchFiltered));
+            intent.putExtra(Intent.EXTRA_REFERRER,
+                    Uri.parse("android-app://" + reactContext.getPackageName()));
+
+            pendingIntent = PendingIntent.getActivity(reactContext, 0, intent, PendingIntent.FLAG_CANCEL_CURRENT);
+
+        } else {
+            intent.setData(Uri.parse("https://play.google.com/store/apps/details?id=com.spotify.music"));
+            pendingIntent = PendingIntent.getActivity(reactContext, 0, intent, PendingIntent.FLAG_ONE_SHOT);
+        }
+        return new NotificationCompat.Action(0, actionTitle, pendingIntent);
     }
 
 }
