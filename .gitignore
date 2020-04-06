@@ -62,3 +62,8 @@ buck-out/
 .project
 .settings
 .classpath
+
+# React Native
+android/app/src/main/assets/index.android.bundle
+android/app/src/main/res/mipmap-hdpi/raw
+

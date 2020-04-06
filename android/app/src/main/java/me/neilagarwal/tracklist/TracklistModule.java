@@ -122,7 +122,11 @@ public class TracklistModule extends ReactContextBaseJavaModule {
         final String errorTextString = "Please contact developer for help";
 
         if (current != null) {
-            title = HtmlCompat.fromHtml("<b>" + current.get("title") + "</b>", HtmlCompat.FROM_HTML_MODE_LEGACY);
+            String[] currentTitleSplit = current.get("title").toString().split("-");
+            String artist = currentTitleSplit[0];
+            String track = currentTitleSplit.length > 1 ? currentTitleSplit[1] : current.get("title").toString();
+
+            title = HtmlCompat.fromHtml("<b>" + artist + "</b>-" + track, HtmlCompat.FROM_HTML_MODE_LEGACY);
 
             if (previous == null && next != null) {
                 // first
@@ -157,7 +161,8 @@ public class TracklistModule extends ReactContextBaseJavaModule {
         Intent intent = new Intent(Intent.ACTION_VIEW);
         PendingIntent pendingIntent;
 
-        String searchFiltered = search.replaceAll("\\p{P}", "");
+        String searchFiltered = search.replaceAll("ft\\.", "");
+        searchFiltered = searchFiltered.replaceAll("\\p{P}", "");
 
         if (isSpotifyInstalled) {
             intent.setData(Uri.parse("spotify:search:" + searchFiltered));
