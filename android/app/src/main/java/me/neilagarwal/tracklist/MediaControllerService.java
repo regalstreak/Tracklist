@@ -68,6 +68,7 @@ public class MediaControllerService extends Service {
                 .build();
 
         startForeground(SERVICE_NOTIFICATION_ID, notification);
+
         return START_STICKY;
     }
 
@@ -122,4 +123,5 @@ public class MediaControllerService extends Service {
             return null;
         }
     }
+
 }

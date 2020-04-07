@@ -8,7 +8,9 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.Uri;
+import android.provider.Settings;
 import android.text.Spanned;
+import android.widget.Toast;
 
 import androidx.core.app.NotificationCompat;
 import androidx.core.text.HtmlCompat;
@@ -41,6 +43,7 @@ public class TracklistModule extends ReactContextBaseJavaModule {
     @ReactMethod
     public void startService() {
         PackageManager pm = reactContext.getPackageManager();
+
         try {
             pm.getPackageInfo("com.spotify.music", 0);
             isSpotifyInstalled = true;
@@ -48,7 +51,15 @@ public class TracklistModule extends ReactContextBaseJavaModule {
             isSpotifyInstalled = false;
         }
 
-        reactContext.startService(mediaControllerServiceIntent);
+        if (notificationAccessPermission()) {
+            reactContext.startService(mediaControllerServiceIntent);
+        } else {
+            Intent notificationListenerSettingsIntent = new
+                    Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS");
+            notificationListenerSettingsIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            reactContext.startActivity(notificationListenerSettingsIntent);
+            Toast.makeText(reactContext, "Notification access required for getting current media playing and position", Toast.LENGTH_LONG).show();
+        }
     }
 
     @ReactMethod
@@ -176,6 +187,14 @@ public class TracklistModule extends ReactContextBaseJavaModule {
             pendingIntent = PendingIntent.getActivity(reactContext, 0, intent, PendingIntent.FLAG_ONE_SHOT);
         }
         return new NotificationCompat.Action(0, actionTitle, pendingIntent);
+    }
+
+    private boolean notificationAccessPermission() {
+        if (Settings.Secure.getString(reactContext.getContentResolver(), "enabled_notification_listeners").contains(reactContext.getApplicationContext().getPackageName())) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
 }
