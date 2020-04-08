@@ -74,24 +74,53 @@ public class TracklistModule extends ReactContextBaseJavaModule {
         Map previous = getTrackHashMap(payload.getMap("previousTrack"));
         Map next = getTrackHashMap(payload.getMap("nextTrack"));
 
+        Notification notification;
 
         PendingIntent contentIntent = PendingIntent.getActivity(reactContext, 0, new Intent(reactContext, MainActivity.class), PendingIntent.FLAG_CANCEL_CURRENT);
 
-        Notification notification = new NotificationCompat.Builder(reactContext, MediaControllerService.CHANNEL_ID)
-                .setContentTitle(getNotificationContentMap(current, previous, next).get("title"))
-                .setContentText((CharSequence) current.get("start"))
-                .setStyle(new NotificationCompat.BigTextStyle()
-                        .bigText(getNotificationContentMap(current, previous, next).get("text"))
-                        .setSummaryText(current.get("start") + " [" + payload.getInt("index") + "]")
-                )
-                .setSmallIcon(R.mipmap.ic_launcher)
-                .setContentIntent(contentIntent)
-                .setOngoing(true)
-                .addAction(getAction("Spotify (Current)", (String) current.get("title")))
-                .addAction(getAction("Spotify (Previous)", (String) previous.get("title")))
-                .setPriority(NotificationCompat.PRIORITY_MAX)
-                .setColor(Color.parseColor("#385CFF"))
-                .build();
+
+        if (current == null && previous == null) {
+            notification = new NotificationCompat.Builder(reactContext, MediaControllerService.CHANNEL_ID)
+                    .setContentTitle("Tracklist")
+                    .setContentText("Service started")
+                    .setSmallIcon(R.mipmap.ic_launcher)
+                    .setContentIntent(contentIntent)
+                    .setOngoing(true)
+                    .setPriority(NotificationCompat.PRIORITY_MAX)
+                    .setColor(Color.parseColor("#385CFF"))
+                    .build();
+        } else if (current != null && previous != null) {
+            notification = new NotificationCompat.Builder(reactContext, MediaControllerService.CHANNEL_ID)
+                    .setContentTitle(getNotificationContentMap(current, previous, next).get("title"))
+                    .setContentText((CharSequence) current.get("start"))
+                    .setStyle(new NotificationCompat.BigTextStyle()
+                            .bigText(getNotificationContentMap(current, previous, next).get("text"))
+                            .setSummaryText(current.get("start") + " [" + payload.getInt("index") + "]")
+                    )
+                    .setSmallIcon(R.mipmap.ic_launcher)
+                    .setContentIntent(contentIntent)
+                    .setOngoing(true)
+                    .addAction(getAction("Spotify (Current)", (String) current.get("title")))
+                    .addAction(getAction("Spotify (Previous)", (String) previous.get("title")))
+                    .setPriority(NotificationCompat.PRIORITY_MAX)
+                    .setColor(Color.parseColor("#385CFF"))
+                    .build();
+        } else {
+            notification = new NotificationCompat.Builder(reactContext, MediaControllerService.CHANNEL_ID)
+                    .setContentTitle(getNotificationContentMap(current, previous, next).get("title"))
+                    .setContentText((CharSequence) current.get("start"))
+                    .setStyle(new NotificationCompat.BigTextStyle()
+                            .bigText(getNotificationContentMap(current, previous, next).get("text"))
+                            .setSummaryText(current.get("start") + " [" + payload.getInt("index") + "]")
+                    )
+                    .setSmallIcon(R.mipmap.ic_launcher)
+                    .setContentIntent(contentIntent)
+                    .setOngoing(true)
+                    .addAction(getAction("Spotify", (String) current.get("title")))
+                    .setPriority(NotificationCompat.PRIORITY_MAX)
+                    .setColor(Color.parseColor("#385CFF"))
+                    .build();
+        }
 
         NotificationManager notificationManager = (NotificationManager) reactContext.getSystemService(Context.NOTIFICATION_SERVICE);
         notificationManager.notify(MediaControllerService.SERVICE_NOTIFICATION_ID, notification);
@@ -169,24 +198,28 @@ public class TracklistModule extends ReactContextBaseJavaModule {
     }
 
     private NotificationCompat.Action getAction(String actionTitle, String search) {
-        Intent intent = new Intent(Intent.ACTION_VIEW);
-        PendingIntent pendingIntent;
+        if (!search.isEmpty()) {
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            PendingIntent pendingIntent;
 
-        String searchFiltered = search.replaceAll("ft\\.", "");
-        searchFiltered = searchFiltered.replaceAll("\\p{P}", "");
+            String searchFiltered = search.replaceAll("ft\\.", "");
+            searchFiltered = searchFiltered.replaceAll("\\p{P}", "");
 
-        if (isSpotifyInstalled) {
-            intent.setData(Uri.parse("spotify:search:" + searchFiltered));
-            intent.putExtra(Intent.EXTRA_REFERRER,
-                    Uri.parse("android-app://" + reactContext.getPackageName()));
+            if (isSpotifyInstalled) {
+                intent.setData(Uri.parse("spotify:search:" + searchFiltered));
+                intent.putExtra(Intent.EXTRA_REFERRER,
+                        Uri.parse("android-app://" + reactContext.getPackageName()));
 
-            pendingIntent = PendingIntent.getActivity(reactContext, 0, intent, PendingIntent.FLAG_CANCEL_CURRENT);
+                pendingIntent = PendingIntent.getActivity(reactContext, 0, intent, PendingIntent.FLAG_CANCEL_CURRENT);
 
+            } else {
+                intent.setData(Uri.parse("https://play.google.com/store/apps/details?id=com.spotify.music"));
+                pendingIntent = PendingIntent.getActivity(reactContext, 0, intent, PendingIntent.FLAG_ONE_SHOT);
+            }
+            return new NotificationCompat.Action(0, actionTitle, pendingIntent);
         } else {
-            intent.setData(Uri.parse("https://play.google.com/store/apps/details?id=com.spotify.music"));
-            pendingIntent = PendingIntent.getActivity(reactContext, 0, intent, PendingIntent.FLAG_ONE_SHOT);
+            return null;
         }
-        return new NotificationCompat.Action(0, actionTitle, pendingIntent);
     }
 
     private boolean notificationAccessPermission() {

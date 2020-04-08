@@ -9,7 +9,7 @@ import {
 import WebView from 'react-native-webview';
 import AsyncStorage from '@react-native-community/async-storage';
 
-import TrackListCard from "./src/components/TrackListCard";
+import TrackList from "./src/components/TrackList";
 import { startService, stopService, updateNotification } from "./src/modules/Tracklist";
 import globalStyles from "./src/styles/GlobalStyles";
 
@@ -165,53 +165,71 @@ const getTracklistStartMap = (trackList) => {
   trackList.forEach((element, index) => {
     if (element.length > 1) {
       element.forEach((subElement, subIndex) => {
-        if (subElement.startSeconds === 1.1) {
+        if (index === 0 && subIndex === 0) {
           trackListStartMap.push({
-            startSeconds: trackList[index][0].startSeconds + 60,
+            startSeconds: 0,
             index,
             subIndex
-          });
-        } else if (!subElement.startSeconds) {
-          trackListStartMap.push({
-            startSeconds: trackList[index - 1][trackList[index - 1].length - 1].startSeconds + 60,
-            index,
-            subIndex
-          });
+          })
         } else {
-          trackListStartMap.push({
-            startSeconds: subElement.startSeconds,
-            index,
-            subIndex
-          });
+          if (subElement.startSeconds === 10000.1) {
+            trackListStartMap.push({
+              startSeconds: trackList[index][0].startSeconds + 100,
+              index,
+              subIndex
+            });
+          } else if (!subElement.startSeconds) {
+            console.log('no start seconds')
+            trackListStartMap.push({
+              startSeconds: trackList[index - 1][trackList[index - 1].length - 1].startSeconds + 60,
+              index,
+              subIndex
+            });
+          } else {
+            trackListStartMap.push({
+              startSeconds: subElement.startSeconds,
+              index,
+              subIndex
+            });
+          }
         }
       });
     } else {
-      if (element[0].startSeconds) {
+      if (index === 0) {
         trackListStartMap.push({
-          startSeconds: element[0].startSeconds,
+          startSeconds: 0,
           index,
           subIndex: 0
-        });
+        })
       } else {
-        trackListStartMap.push({
-          startSeconds: Math.random() * 10000,
-          index,
-          subIndex: 0
-        });
+
+        if (element[0].startSeconds) {
+          trackListStartMap.push({
+            startSeconds: element[0].startSeconds,
+            index,
+            subIndex: 0
+          });
+        } else {
+          console.log('no start seconds')
+          trackListStartMap.push({
+            startSeconds: Math.random() * 10000,
+            index,
+            subIndex: 0
+          });
+        }
       }
     }
   });
 
   trackListStartMap.sort((a, b) => a.startSeconds - b.startSeconds);
-
   return trackListStartMap;
 }
 
-const renderTrackList = (trackList) => {
-  return trackList.map(function (item, index) {
-    return <TrackListCard item={item} index={index} />
-  })
-}
+// const renderTrackList = (trackList) => {
+//   return trackList.map(function (item, index) {
+//     return <TrackList item={item} index={index} />
+//   })
+// }
 
 const hmsToSecondsOnly = (str) => {
   if (str) {
@@ -223,7 +241,7 @@ const hmsToSecondsOnly = (str) => {
     }
     return s;
   } else {
-    return 1.1;
+    return 10000.1;
   }
 }
 
@@ -236,7 +254,11 @@ const getCurrentIndex = (trackListMap, position) => {
       }
       b = Math.floor(b / 2);
     }
-    return x;
+    if (x === -1) {
+      return x + 1;
+    } else {
+      return x;
+    }
   } else {
     return 0;
   }
@@ -246,7 +268,7 @@ const App = () => {
 
   const [blocked, setBlocked] = useState(false);
   const [mediaTitle, setMediaTitle] = useState('');
-  const [mediaPosition, setMediaPosition] = useState('')
+  const [mediaPosition, setMediaPosition] = useState(0)
   const [trackList, setTrackList] = useState([]);
   const [trackListStartMap, setTrackListStartMap] = useState([]);
   const [currentTrack, setCurrentTrack] = useState({
@@ -403,8 +425,7 @@ const App = () => {
             title='Stop service'
           />
 
-          {renderTrackList(trackList)}
-
+          {trackList.length > 0 ? <TrackList trackList={trackList} /> : null}
         </ScrollView>
       </>
     );
