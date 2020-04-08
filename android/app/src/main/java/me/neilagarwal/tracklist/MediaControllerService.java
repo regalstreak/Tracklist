@@ -61,8 +61,7 @@ public class MediaControllerService extends Service {
         Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle("Tracklist")
                 .setContentText("Service started")
-                .addAction(0, "Action", null)
-                .setSmallIcon(R.mipmap.ic_launcher)
+                .setSmallIcon(R.drawable.ic_notification)
                 .setContentIntent(contentIntent)
                 .setOngoing(true)
                 .build();
