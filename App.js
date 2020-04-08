@@ -1,17 +1,27 @@
 import React, { useEffect, useState } from 'react';
 import {
-  StyleSheet,
   ScrollView,
-  Button,
   Text,
+  View,
+  StyleSheet,
   DeviceEventEmitter,
 } from 'react-native';
 
 import TrackList from "./src/components/TrackList";
-import { startService, stopService, updateNotification } from "./src/modules/Tracklist";
+import ServiceButton from "./src/components/ServiceButton"
+
+import { updateNotification } from "./src/modules/Tracklist";
 import globalStyles from "./src/styles/GlobalStyles";
 import { checkBlocked, getLocalTracklist, getTracklist, getTracklistStartMap, getCurrentIndex } from "./src/utils/TracklistUtils";
 
+const useIsMountedRef = () => {
+  const isMountedRef = useRef(null);
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => isMountedRef.current = false;
+  });
+  return isMountedRef;
+}
 
 
 const App = () => {
@@ -154,33 +164,69 @@ const App = () => {
   } else {
 
     return (
-      <>
-        <ScrollView
-          style={globalStyles.scrollView}
-          contentInsetAdjustmentBehavior="automatic">
-          <Text style={globalStyles.textEmphasis}>Now playing</Text>
-          <Text style={globalStyles.textEmphasis}>{mediaTitle}</Text>
-          <Text style={globalStyles.textNormal}>{mediaPosition}</Text>
-          <Text style={globalStyles.textNormal}>{currentTrack.trackItem.startSeconds} - {currentTrack.trackItem.title}</Text>
-          <Button
-            color="#385CFF"
-            onPress={() => {
-              startService();
-            }}
-            title='Start service'
-          />
-          <Button
-            onPress={() => {
-              stopService();
-            }}
-            title='Stop service'
-          />
+      <ScrollView
+        style={styles.scrollView}
+        contentInsetAdjustmentBehavior="automatic">
 
-          {trackList.length > 0 ? <TrackList trackList={trackList} /> : null}
-        </ScrollView>
-      </>
+        <View style={styles.headerView}>
+          <Text style={globalStyles.textEmphasisBig}>Now playing</Text>
+          <ServiceButton />
+        </View>
+        <Text style={[globalStyles.textLowEmphasisSmall, styles.mediaTitle]}>{mediaTitle}</Text>
+
+        <View style={styles.currentPlaying}>
+          <View style={styles.mediaTitleView}>
+            <Text style={globalStyles.textNormalEmphasis}>{currentTrack.trackItem.title}</Text>
+          </View>
+          <View style={styles.startView}>
+            <Text style={globalStyles.textLowEmphasisSmall}>{currentTrack.trackItem.start}</Text>
+          </View>
+        </View>
+        {/* <Text style={globalStyles.textNormal}>{mediaPosition}</Text> */}
+
+
+        {trackList.length > 0 ?
+          <TrackList
+            trackList={trackList}
+            current={{
+              mainIndex: currentTrack.mainIndex,
+              subIndex: currentTrack.subIndex
+            }}
+          />
+          : null}
+      </ScrollView>
     );
   }
 };
 
 export default App;
+
+const styles = StyleSheet.create({
+  scrollView: {
+    backgroundColor: '#14151A',
+    paddingTop: 30,
+    padding: 24,
+  },
+  headerView: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4
+  },
+  mediaTitleView: {
+    flex: 0.84
+  },
+  startView: {
+    flex: 0.16,
+    alignItems: 'flex-end'
+  },
+  mediaTitle: {
+    marginBottom: 16
+  },
+  currentPlaying: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    flex: 1,
+    marginBottom: 10
+  }
+})

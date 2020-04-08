@@ -1,5 +1,6 @@
 package me.neilagarwal.tracklist;
 
+import android.app.ActivityManager;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -15,6 +16,7 @@ import android.widget.Toast;
 import androidx.core.app.NotificationCompat;
 import androidx.core.text.HtmlCompat;
 
+import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
@@ -124,6 +126,17 @@ public class TracklistModule extends ReactContextBaseJavaModule {
 
         NotificationManager notificationManager = (NotificationManager) reactContext.getSystemService(Context.NOTIFICATION_SERVICE);
         notificationManager.notify(MediaControllerService.SERVICE_NOTIFICATION_ID, notification);
+    }
+
+    @ReactMethod
+    public void serviceStatus(Promise promise) {
+        ActivityManager manager = (ActivityManager) reactContext.getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (MediaControllerService.class.getName().equals(service.service.getClassName())) {
+                promise.resolve(service.foreground);
+            }
+        }
+        promise.resolve(false);
     }
 
     private String getReadableMapString(ReadableMap readableMap, String key) {

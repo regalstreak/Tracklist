@@ -14,6 +14,7 @@
     "cheerio-without-node-native": "0.20.2",
     "react": "16.11.0",
     "react-native": "0.62.0",
+    "react-native-vector-icons": "^6.6.0",
     "react-native-webview": "^9.0.2"
   },
   "devDependencies": {
