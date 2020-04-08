@@ -1,5 +1,5 @@
-import React from "react";
-import { Text, View, StyleSheet } from 'react-native';
+import React, { useCallback } from "react";
+import { Text, TouchableOpacity, View, StyleSheet, Linking, Alert } from 'react-native';
 
 import globalStyles from "../styles/GlobalStyles";
 
@@ -11,8 +11,24 @@ const TrackListCard = (props) => {
     const trackItemStyle = main ? styles.trackItem : styles.trackItemSub;
     const indexText = main ? mainIndex + 1 : `${mainIndex + 1}.${subIndex}`
 
+    let searchFiltered = title.replace(/ft./g, '').replace(/(~|`|!|#|%|^|&|\*|\(|\)|{|}|\[|\]|;|:|\"|'|<|,|\.|>|\?|\/|\\|\||-|_|\+|=)/g, "");
+    const spotifySearchUri = `spotify:search:${searchFiltered}`
+
+    const handlePress = useCallback(async () => {
+        const supported = await Linking.canOpenURL(spotifySearchUri);
+
+        if (supported) {
+            await Linking.openURL(spotifySearchUri);
+        } else {
+            Alert.alert("Install spotify to open this url");
+        }
+    });
+
     return (
-        <View style={{ backgroundColor, ...trackItemStyle }}>
+        <TouchableOpacity
+            style={{ backgroundColor, ...trackItemStyle }}
+            onPress={handlePress}
+        >
             <View >
                 <Text style={globalStyles.textLowEmphasis}>{indexText}]  </Text>
             </View>
@@ -20,7 +36,7 @@ const TrackListCard = (props) => {
                 <Text style={globalStyles.textNormal}>{title}</Text>
                 <Text style={globalStyles.textLowEmphasis}>{start}</Text>
             </View>
-        </View>
+        </TouchableOpacity>
     )
 }
 
