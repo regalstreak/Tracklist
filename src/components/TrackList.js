@@ -7,7 +7,7 @@ import globalStyles from "../styles/GlobalStyles";
 const TrackListCard = (props) => {
     const { main, title, start, mainIndex, subIndex, current } = props;
 
-    const backgroundColor = current ? "#231B1B" : "#1B1C23";
+    const backgroundColor = current ? "#1F348F" : "#1B1C23";
     const trackItemStyle = main ? styles.trackItem : styles.trackItemSub;
     const indexText = main ? mainIndex + 1 : `${mainIndex + 1}.${subIndex}`
 

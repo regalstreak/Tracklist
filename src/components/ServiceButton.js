@@ -10,7 +10,6 @@ export default ServiceButton = () => {
         if (mounted) {
             serviceStatus().then(val => {
                 setStarted(val)
-                console.log(val)
             })
         }
 
