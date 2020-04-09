@@ -5,6 +5,10 @@ export default styles = StyleSheet.create({
         color: '#9BAECB',
         fontSize: 14
     },
+    textLowEmphasisMedium: {
+        color: '#9BAECB',
+        fontSize: 16
+    },
     textLowEmphasisSmall: {
         color: '#9BAECB',
         fontSize: 12
@@ -12,7 +16,8 @@ export default styles = StyleSheet.create({
     textNormal: {
         color: '#F2F3F5',
         fontFamily: 'Karla-Regular',
-        fontSize: 16
+        fontSize: 16,
+        lineHeight: 22
     },
     textNormalEmphasis: {
         color: '#F2F3F5',
@@ -28,5 +33,14 @@ export default styles = StyleSheet.create({
         color: '#FFFFFF',
         fontFamily: 'Rubik-Medium',
         fontSize: 26
+    },
+    textUnderline: {
+        textDecorationLine: 'underline'
+    },
+    textLink: {
+        color: '#385CFF',
+        fontFamily: 'Karla-Bold',
+        fontSize: 16,
+        // textDecorationLine: 'underline'
     }
 })

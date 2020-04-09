@@ -9,6 +9,8 @@ import {
 
 import TrackList from "./src/components/TrackList";
 import ServiceButton from "./src/components/ServiceButton"
+import MadeBy from "./src/components/MadeBy";
+import About from './src/components/About';
 
 import { updateNotification } from "./src/modules/Tracklist";
 import globalStyles from "./src/styles/GlobalStyles";
@@ -36,6 +38,7 @@ const App = () => {
     subIndex: 0,
     trackItem: { title: '', startSeconds: 0, start: '' }
   })
+  const [serviceStarted, setServiceStarted] = useState(false);
 
   useEffect(() => {
     DeviceEventEmitter.addListener('MediaControllerService', (data) => {
@@ -166,34 +169,46 @@ const App = () => {
     return (
       <ScrollView
         style={styles.scrollView}
-        contentInsetAdjustmentBehavior="automatic">
+        contentInsetAdjustmentBehavior="automatic"
+      >
 
         <View style={styles.headerView}>
-          <Text style={globalStyles.textEmphasisBig}>Now playing</Text>
-          <ServiceButton />
-        </View>
-        <Text style={[globalStyles.textLowEmphasisSmall, styles.mediaTitle]}>{mediaTitle}</Text>
+          <Text style={globalStyles.textEmphasisBig}>
+            {serviceStarted ? `Now playing` : `Tracklist`}
+          </Text>
 
-        <View style={styles.currentPlaying}>
-          <View style={styles.mediaTitleView}>
-            <Text style={globalStyles.textNormalEmphasis}>{currentTrack.trackItem.title}</Text>
-          </View>
-          <View style={styles.startView}>
-            <Text style={globalStyles.textLowEmphasisSmall}>{currentTrack.trackItem.start}</Text>
-          </View>
-        </View>
-        {/* <Text style={globalStyles.textNormal}>{mediaPosition}</Text> */}
-
-
-        {trackList.length > 0 ?
-          <TrackList
-            trackList={trackList}
-            current={{
-              mainIndex: currentTrack.mainIndex,
-              subIndex: currentTrack.subIndex
+          <ServiceButton
+            onChange={(val) => {
+              setServiceStarted(val);
             }}
           />
-          : null}
+        </View>
+
+        {trackList.length > 0 && serviceStarted ?
+          <>
+            <Text style={[globalStyles.textLowEmphasisSmall, styles.mediaTitle]}>{mediaTitle}</Text>
+
+            <View style={styles.currentPlaying}>
+              <View style={styles.mediaTitleView}>
+                <Text style={globalStyles.textNormalEmphasis}>{currentTrack.trackItem.title}</Text>
+              </View>
+              <View style={styles.startView}>
+                <Text style={globalStyles.textLowEmphasisSmall}>{currentTrack.trackItem.start}</Text>
+              </View>
+            </View>
+
+            <TrackList
+              trackList={trackList}
+              current={{
+                mainIndex: currentTrack.mainIndex,
+                subIndex: currentTrack.subIndex
+              }}
+            />
+          </>
+          : <About />
+        }
+
+        <MadeBy />
       </ScrollView>
     );
   }

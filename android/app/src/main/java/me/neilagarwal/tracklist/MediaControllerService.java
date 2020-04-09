@@ -8,6 +8,7 @@ import android.app.Service;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.media.MediaMetadata;
 import android.media.session.MediaController;
 import android.media.session.MediaSessionManager;
@@ -64,6 +65,8 @@ public class MediaControllerService extends Service {
                 .setSmallIcon(R.drawable.ic_notification)
                 .setContentIntent(contentIntent)
                 .setOngoing(true)
+                .setColor(Color.parseColor("#385CFF"))
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .build();
 
         startForeground(SERVICE_NOTIFICATION_ID, notification);

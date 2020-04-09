@@ -90,6 +90,7 @@ public class TracklistModule extends ReactContextBaseJavaModule {
                     .setOngoing(true)
                     .setPriority(NotificationCompat.PRIORITY_MAX)
                     .setColor(Color.parseColor("#385CFF"))
+                    .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                     .build();
         } else if (current != null && previous != null) {
             notification = new NotificationCompat.Builder(reactContext, MediaControllerService.CHANNEL_ID)
@@ -106,6 +107,7 @@ public class TracklistModule extends ReactContextBaseJavaModule {
                     .addAction(getAction("Spotify (Previous)", (String) previous.get("title")))
                     .setPriority(NotificationCompat.PRIORITY_MAX)
                     .setColor(Color.parseColor("#385CFF"))
+                    .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                     .build();
         } else {
             notification = new NotificationCompat.Builder(reactContext, MediaControllerService.CHANNEL_ID)
@@ -121,6 +123,7 @@ public class TracklistModule extends ReactContextBaseJavaModule {
                     .addAction(getAction("Spotify", (String) current.get("title")))
                     .setPriority(NotificationCompat.PRIORITY_MAX)
                     .setColor(Color.parseColor("#385CFF"))
+                    .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                     .build();
         }
 
