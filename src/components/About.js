@@ -32,7 +32,7 @@ export default About = () => {
                 {'\n'}
             </Text>
             <Text style={GlobalStyles.textNormal}>
-                Some track and timestamps might be inaccurate.
+                Some tracks and timestamps might be inaccurate.
                 Please listen to tracks before adding them to your playlists!
                  {'\n'}
             </Text>

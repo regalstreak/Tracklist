@@ -6,7 +6,7 @@ export default MadeBy = () => {
     return (
         <View style={styles.container}>
             <Text onPress={() => Linking.openURL("https://github.com/regalstreak")} style={[globalStyles.textNormal, styles.text]}>
-                Made with ♥ by <Text style={[globalStyles.textNormalEmphasis, globalStyles.textUnderline]}>Neil Agarwal</Text>
+                <Text style={globalStyles.textNormalEmphasis}>{"</>"}</Text> with ♥ by <Text style={[globalStyles.textNormalEmphasis, globalStyles.textUnderline]}>Neil Agarwal</Text>
             </Text>
         </View>
     );
